@@ -41,7 +41,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
         String token = jwtUtil.generateToken(user.getId(), user.getEmail());
 
-        String redirectUrl = frontendUrl + "/login/login.html"
+        String redirectUrl = frontendUrl + "/login"
                 + "?token=" + token
                 + "&userId=" + user.getId()
                 + "&name=" + URLEncoder.encode(user.getName(), StandardCharsets.UTF_8)
