@@ -32,6 +32,7 @@ export const Analytics: React.FC = () => {
   const { reminderLogs, medicines } = useApp();
   const [activeTab, setActiveTab] = useState('weekly');
   const [backendAnalytics, setBackendAnalytics] = useState<any>(null);
+  const [backendHeatmap, setBackendHeatmap] = useState<any>(null);
 
   useEffect(() => {
     const userId = localStorage.getItem('userId');
@@ -42,6 +43,9 @@ export const Analytics: React.FC = () => {
     ]).then(([analyticsRes, heatmapRes]) => {
       if (analyticsRes.status === 'fulfilled') {
         setBackendAnalytics(analyticsRes.value.data);
+      }
+      if (heatmapRes.status === 'fulfilled' && heatmapRes.value?.data) {
+        setBackendHeatmap(heatmapRes.value.data);
       }
     }).catch(err => console.warn('Backend analytics fetch error:', err));
   }, []);
@@ -175,38 +179,37 @@ export const Analytics: React.FC = () => {
               <span className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">completed</span>
             </div>
             <p className="text-[11px] text-slate-400 dark:text-zinc-500 leading-normal mt-2">
-              Logs saved in localStorage database.
+              Synchronized with database logs.
             </p>
           </CardContent>
         </Card>
 
-        {/* Active Treatments */}
+        {/* Most Consistent Medicine */}
         <Card className="border-slate-100 dark:border-zinc-800/80 bg-white dark:bg-[#121214]">
           <CardContent className="p-6 flex flex-col gap-2">
-            <span className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest">Active Shelf</span>
+            <span className="text-[10px] font-bold text-teal-500 uppercase tracking-widest">Top Consistent Medication</span>
             <div className="flex items-baseline gap-2 mt-1">
-              <span className="text-3xl font-black text-slate-800 dark:text-white leading-none">
-                {medicines.filter(m => m.status === 'active').length}
+              <span className="text-xl font-extrabold text-slate-800 dark:text-white leading-tight truncate">
+                {backendAnalytics?.bestMedicine || medicines[0]?.name || 'N/A'}
               </span>
-              <span className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">medications</span>
             </div>
             <p className="text-[11px] text-slate-400 dark:text-zinc-500 leading-normal mt-2">
-              Daily scheduling alerts active on profile.
+              Highest adherence consistency.
             </p>
           </CardContent>
         </Card>
 
-        {/* Compliance Award */}
-        <Card className="border-slate-100 dark:border-zinc-800/80 bg-gradient-to-tr from-brand-primary/5 to-brand-accent/5 dark:from-brand-primary/10 dark:to-zinc-900 border-brand-primary/10">
-          <CardContent className="p-6 flex flex-col gap-2 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-brand-primary/5 rounded-full blur-xl -z-10" />
-            <span className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest">compliance badge</span>
-            <div className="flex items-center gap-2 mt-1 select-none">
-              <Award className="w-6 h-6 text-brand-primary dark:text-brand-secondary fill-brand-primary/10 dark:fill-brand-secondary/10" />
-              <span className="text-sm font-extrabold text-slate-800 dark:text-white leading-none">Silver Tier compliance</span>
+        {/* Most Missed Medicine */}
+        <Card className="border-slate-100 dark:border-zinc-800/80 bg-white dark:bg-[#121214]">
+          <CardContent className="p-6 flex flex-col gap-2">
+            <span className="text-[10px] font-bold text-rose-500 uppercase tracking-widest">Needs Attention</span>
+            <div className="flex items-baseline gap-2 mt-1">
+              <span className="text-xl font-extrabold text-slate-800 dark:text-white leading-tight truncate">
+                {backendAnalytics?.mostMissed || 'None 🎉'}
+              </span>
             </div>
-            <p className="text-[11px] text-slate-400 dark:text-zinc-500 leading-normal mt-3">
-              Maintain &gt;90% adherence for 5 more days to unlock Gold status!
+            <p className="text-[11px] text-slate-400 dark:text-zinc-500 leading-normal mt-2">
+              Most frequently missed dose.
             </p>
           </CardContent>
         </Card>
