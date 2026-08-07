@@ -9,3 +9,5 @@ export const explainMedicine = (body: any) => api.post("/api/medicines/explain",
 export const processPrescription = (formData: FormData) => api.post("/api/medicines/process-prescription", formData, {
   headers: { "Content-Type": "multipart/form-data" }
 });
+export const markMedicineTaken = (id: number | string) => api.put(`/api/medicines/${id}/taken`);
+export const markMedicineMissed = (id: number | string) => api.put(`/api/medicines/${id}/missed`);

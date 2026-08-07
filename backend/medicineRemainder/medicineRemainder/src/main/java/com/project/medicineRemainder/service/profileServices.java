@@ -25,43 +25,44 @@ public class profileServices {
             return createProfile(userId, dto);
         }
     }
-        public profileDto createProfile(Long userId, profileDto dto) {
-
-            User user = userRepository.findById(userId)
-                    .orElseThrow(() -> new RuntimeException("User nahi mila: " + userId));
-
-            if (profileRepository.existsByUserId(userId)) {
-                throw new RuntimeException("Profile pehle se exist karti hai, update use karo");
-            }
-
-            profile p = mapToEntity(dto);
-            p.setUser(user);
-
-            return mapToDto(profileRepository.save(p));
+    public profileDto createProfile(Long userId, profileDto dto) {
+        User user = userRepository.findById(userId).orElse(null);
+        if (user == null && dto.getEmail() != null) {
+            user = userRepository.findByEmail(dto.getEmail()).orElse(null);
+        }
+        if (user == null) {
+            return dto;
         }
 
-        // ─── Update ──────────────────────────────────
+        profile p = mapToEntity(dto);
+        p.setUser(user);
 
-        public profileDto updateProfile(Long userId, profileDto dto) {
+        return mapToDto(profileRepository.save(p));
+    }
 
-            profile p = profileRepository.findByUserId(userId)
-                    .orElseThrow(() -> new RuntimeException("Profile nahi mili: " + userId));
+    // ─── Update ──────────────────────────────────
 
-            if (dto.getName() != null)                  p.setName(dto.getName());
-            if (dto.getEmail() != null)                 p.setEmail(dto.getEmail());
-            if (dto.getPhone() != null)                 p.setPhone(dto.getPhone());
-            if (dto.getGender() != null)                p.setGender(dto.getGender());
-            if (dto.getDateOfBirth() != null)           p.setDateOfBirth(dto.getDateOfBirth());
-            if (dto.getAddressLine() != null)           p.setAddressLine(dto.getAddressLine());
-            if (dto.getCity() != null)                  p.setCity(dto.getCity());
-            if (dto.getState() != null)                 p.setState(dto.getState());
-            if (dto.getPincode() != null)               p.setPincode(dto.getPincode());
-            if (dto.getBloodGroup() != null)            p.setBloodGroup(dto.getBloodGroup());
-            if (dto.getEmergencyContactName() != null)  p.setEmergencyContactName(dto.getEmergencyContactName());
-            if (dto.getEmergencyContactPhone() != null) p.setEmergencyContactPhone(dto.getEmergencyContactPhone());
-            if(dto.getAge()!=null)p.setAge(dto.getAge());
-            return mapToDto(profileRepository.save(p));
+    public profileDto updateProfile(Long userId, profileDto dto) {
+        profile p = profileRepository.findByUserId(userId).orElse(null);
+        if (p == null) {
+            return createProfile(userId, dto);
         }
+
+        if (dto.getName() != null)                  p.setName(dto.getName());
+        if (dto.getEmail() != null)                 p.setEmail(dto.getEmail());
+        if (dto.getPhone() != null)                 p.setPhone(dto.getPhone());
+        if (dto.getGender() != null)                p.setGender(dto.getGender());
+        if (dto.getDateOfBirth() != null)           p.setDateOfBirth(dto.getDateOfBirth());
+        if (dto.getAddressLine() != null)           p.setAddressLine(dto.getAddressLine());
+        if (dto.getCity() != null)                  p.setCity(dto.getCity());
+        if (dto.getState() != null)                 p.setState(dto.getState());
+        if (dto.getPincode() != null)               p.setPincode(dto.getPincode());
+        if (dto.getBloodGroup() != null)            p.setBloodGroup(dto.getBloodGroup());
+        if (dto.getEmergencyContactName() != null)  p.setEmergencyContactName(dto.getEmergencyContactName());
+        if (dto.getEmergencyContactPhone() != null) p.setEmergencyContactPhone(dto.getEmergencyContactPhone());
+        if (dto.getAge() != null)                   p.setAge(dto.getAge());
+        return mapToDto(profileRepository.save(p));
+    }
 
         // ─── Get ─────────────────────────────────────
 

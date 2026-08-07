@@ -347,10 +347,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       })
     );
 
-    const numericLogId = Number(logId.replace(/\D/g, ''));
-    if (!isNaN(numericLogId) && numericLogId > 0) {
+    const targetLog = reminderLogs.find(l => l.id === logId);
+
+    // Check if logId is a direct clean numeric database ID (e.g. 1, 2, 15)
+    const directNumericId = Number(logId);
+    if (!isNaN(directNumericId) && Number.isInteger(directNumericId) && directNumericId > 0 && directNumericId < 2147483647) {
       const backendStatus = status === 'completed' ? 'TAKEN' : 'MISSED';
-      reminderApi.updateReminder(numericLogId, backendStatus).catch((err: any) => console.warn('Failed to update reminder on backend:', err));
+      reminderApi.updateReminder(directNumericId, backendStatus).catch((err: any) => console.warn('Failed to update reminder on backend:', err));
+    } else {
+      // Find medicine ID from target log or logId format (e.g., sch-5-...)
+      const medIdStr = targetLog?.medicineId || logId.split('-')[1];
+      const medId = Number(medIdStr);
+      if (!isNaN(medId) && Number.isInteger(medId) && medId > 0 && medId < 2147483647) {
+        if (status === 'completed') {
+          medicineApi.markMedicineTaken(medId).catch(err => console.warn('Failed to mark medicine taken on backend:', err));
+        } else if (status === 'missed') {
+          medicineApi.markMedicineMissed(medId).catch(err => console.warn('Failed to mark medicine missed on backend:', err));
+        }
+      }
     }
   };
 

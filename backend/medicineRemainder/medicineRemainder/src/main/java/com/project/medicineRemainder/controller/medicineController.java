@@ -56,6 +56,20 @@ public class medicineController {
             medicineService.deleteMedicine(id);
             return "Medicine deleted successfully";
         }
+
+        // ✅ Mark Taken
+        @PutMapping("/{id}/taken")
+        public ResponseEntity<Void> markTaken(@PathVariable Long id) {
+            medicineService.markMedicineTaken(id);
+            return ResponseEntity.ok().build();
+        }
+
+        // ✅ Mark Missed
+        @PutMapping("/{id}/missed")
+        public ResponseEntity<Void> markMissed(@PathVariable Long id) {
+            medicineService.markMedicineMissed(id);
+            return ResponseEntity.ok().build();
+        }
     private String extractField(String json, String fieldName) {
         if (json == null) return "Unknown";
         try {
