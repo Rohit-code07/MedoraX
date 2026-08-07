@@ -26,13 +26,13 @@ public class Authcontroller {
         // ── OAuth success → dashboard ─────────────────────────────
         @GetMapping("/success")
         public void loginSuccess(HttpServletResponse response) throws IOException {
-            response.sendRedirect(frontendUrl + "/dashBoard/dashboard.html");
+            response.sendRedirect(frontendUrl + "/dashboard");
         }
 
         // ── OAuth failure → login with error ─────────────────────
         @GetMapping("/failure")
         public void loginFailure(HttpServletResponse response) throws IOException {
-            response.sendRedirect(frontendUrl + "/login-page/index.html?error=login_failed");
+            response.sendRedirect(frontendUrl + "/auth?error=login_failed");
         }
 
         // ── Current user — 401 if not authenticated ───────────────
@@ -60,7 +60,7 @@ public class Authcontroller {
             new SecurityContextLogoutHandler()
                     .logout(req, res,
                             SecurityContextHolder.getContext().getAuthentication());
-            res.sendRedirect(frontendUrl + "/login-page/index.html");
+            res.sendRedirect(frontendUrl + "/auth");
         }
 
         private String getAttr(OAuth2User p, String key) {

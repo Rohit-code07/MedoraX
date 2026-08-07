@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useApp } from '../context/AppContext';
 import { Sparkles, ArrowRight, ShieldCheck, Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
@@ -15,11 +15,33 @@ type AuthMode = 'login' | 'signup';
 
 export const Auth: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { login } = useApp();
   const [mode, setMode] = useState<AuthMode>('login');
   const [showPassword, setShowPassword] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isSubmitLoading, setIsSubmitLoading] = useState(false);
+
+  useEffect(() => {
+    const token = searchParams.get('token');
+    const userId = searchParams.get('userId');
+    const name = searchParams.get('name');
+    const email = searchParams.get('email');
+    const error = searchParams.get('error');
+
+    if (error) {
+      toast.error('Google Sign-in failed. Please try again.');
+      return;
+    }
+
+    if (token) {
+      localStorage.setItem('token', token);
+      if (userId) localStorage.setItem('userId', userId);
+      login(email || 'user@medorax.ai', name || undefined);
+      toast.success('Successfully logged in with Google!');
+      navigate('/dashboard', { replace: true });
+    }
+  }, [searchParams, login, navigate]);
 
   const { register, handleSubmit, formState: { errors }, reset } = useForm({
     defaultValues: {

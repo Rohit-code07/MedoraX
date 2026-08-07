@@ -23,6 +23,7 @@ function App() {
           {/* Public Routes */}
           <Route path="/" element={<LandingPage />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/login" element={<Auth />} />
 
           {/* Protected Dashboard Routes */}
           <Route element={<DashboardLayout />}>
