@@ -304,15 +304,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [medicines, setMedicines] = useState<Medicine[]>(() => {
     const saved = localStorage.getItem('medorax_medicines');
-    return saved ? JSON.parse(saved) : INITIAL_MEDICINES;
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [reminderLogs, setReminderLogs] = useState<ReminderLog[]>(() => {
     const saved = localStorage.getItem('medorax_logs');
-    if (saved) return JSON.parse(saved);
-    const initialLogs = seedReminderLogs(INITIAL_MEDICINES);
-    localStorage.setItem('medorax_logs', JSON.stringify(initialLogs));
-    return initialLogs;
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [notifications, setNotifications] = useState<AppNotification[]>(() => {
@@ -372,7 +369,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           userId ? profileApi.getProfile(userId) : Promise.reject('No userId'),
         ]);
 
-        if (medRes.status === 'fulfilled' && Array.isArray(medRes.value.data) && medRes.value.data.length > 0) {
+        if (medRes.status === 'fulfilled' && Array.isArray(medRes.value.data)) {
           const apiMeds: Medicine[] = medRes.value.data.map((m: any) => ({
             id: String(m.id),
             name: m.name || '',
@@ -385,10 +382,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             status: 'active',
             category: (m.category || 'tablet').toLowerCase(),
             notes: m.notes || '',
-            color: m.color,
-            stock: m.stock,
-            maxStock: m.maxStock,
-            takenToday: m.takenToday,
+            color: m.color || m.colour || 'tablet',
+            stock: m.stock !== undefined ? m.stock : 30,
+            maxStock: m.maxStock !== undefined ? m.maxStock : 30,
+            takenToday: Boolean(m.takenToday),
           }));
           setMedicines(apiMeds);
         }
@@ -396,7 +393,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (profRes.status === 'fulfilled' && profRes.value.data) {
           setProfile(prev => ({
             ...prev,
-            ...profRes.value.data,
+            name: profRes.value.data.name || prev.name,
+            email: profRes.value.data.email || prev.email,
+            bloodType: profRes.value.data.bloodGroup || prev.bloodType,
+            emergencyContact: {
+              ...prev.emergencyContact,
+              name: profRes.value.data.emergencyContactName || prev.emergencyContact.name,
+              phone: profRes.value.data.emergencyContactPhone || prev.emergencyContact.phone,
+            }
           }));
         }
       } catch (err) {
@@ -595,6 +599,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const updateProfile = (profileUpdate: Partial<UserProfile>) => {
     setProfile((prev) => ({ ...prev, ...profileUpdate }));
+    const userId = localStorage.getItem('userId');
+    if (userId) {
+      profileApi.updateProfile(userId, {
+        name: profileUpdate.name,
+        email: profileUpdate.email,
+        phone: profileUpdate.emergencyContact?.phone,
+        bloodGroup: profileUpdate.bloodType,
+        emergencyContactName: profileUpdate.emergencyContact?.name,
+        emergencyContactPhone: profileUpdate.emergencyContact?.phone,
+      }).catch(err => console.warn('Failed to sync profile update to backend:', err));
+    }
   };
 
   const markNotificationRead = (id: string) => {
