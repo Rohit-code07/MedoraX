@@ -4,7 +4,6 @@ import jakarta.validation.constraints.Email;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import jakarta.validation.constraints.Pattern;
 
 import java.time.LocalDate;
 
@@ -15,7 +14,6 @@ public class profileDto {
     private String name;
     @Email(message = "Valid email dalo")
     private String email;
-    @Pattern(regexp = "^[6-9]\\d{9}$", message = "Valid emergency contact number dalo")
     private String phone;
     private Long Age;
     private String gender;          // MALE, FEMALE, OTHER
@@ -33,7 +31,6 @@ public class profileDto {
 
 
     private String emergencyContactName;
-    @Pattern(regexp = "^[6-9]\\d{9}$", message = "Valid emergency contact number dalo")
     private String emergencyContactPhone;
 
 }
