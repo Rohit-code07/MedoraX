@@ -90,7 +90,8 @@ export const Auth: React.FC = () => {
 
   const handleGoogleLogin = () => {
     setIsGoogleLoading(true);
-    const backendBase = import.meta.env.VITE_API_BASE_URL || 'https://medorax-0.onrender.com';
+    const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    const backendBase = import.meta.env.VITE_API_BASE_URL || (isLocal ? 'http://localhost:8080' : 'https://medorax-0.onrender.com');
     window.location.href = `${backendBase}/oauth2/authorization/google`;
   };
 
