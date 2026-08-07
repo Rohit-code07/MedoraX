@@ -47,8 +47,8 @@ export const Auth: React.FC = () => {
   const { register, handleSubmit, formState: { errors }, reset } = useForm({
     defaultValues: {
       name: '',
-      email: 'rohit@medorax.ai',
-      password: 'password123',
+      email: '',
+      password: '',
     }
   });
 

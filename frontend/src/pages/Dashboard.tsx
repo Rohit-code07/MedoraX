@@ -407,17 +407,17 @@ export const Dashboard: React.FC = () => {
               {/* Predefined prompt helpers */}
               <div className="flex flex-col gap-1.5">
                 <button 
-                  onClick={() => navigate('/ai-assistant?q=Explain side effects of Lipitor')}
+                  onClick={() => navigate('/ai-assistant?q=Explain common medication side effects')}
                   className="p-2.5 rounded-xl border border-slate-150 dark:border-zinc-800 bg-white dark:bg-[#1c1c1f]/40 text-[11px] text-slate-700 dark:text-zinc-300 font-semibold hover:border-brand-accent hover:text-brand-accent transition-all text-left flex items-center justify-between cursor-pointer"
                 >
-                  <span>"Explain Lipitor side effects"</span>
+                  <span>"Explain common medication side effects"</span>
                   <Plus className="w-3 h-3 text-slate-400" />
                 </button>
                 <button 
-                  onClick={() => navigate('/ai-assistant?q=Is it safe to take Metformin with food')}
+                  onClick={() => navigate('/ai-assistant?q=Best practices for taking daily medicines')}
                   className="p-2.5 rounded-xl border border-slate-150 dark:border-zinc-800 bg-white dark:bg-[#1c1c1f]/40 text-[11px] text-slate-700 dark:text-zinc-300 font-semibold hover:border-brand-accent hover:text-brand-accent transition-all text-left flex items-center justify-between cursor-pointer"
                 >
-                  <span>"Is Metformin safe with coffee?"</span>
+                  <span>"Best practices for taking daily medicines"</span>
                   <Plus className="w-3 h-3 text-slate-400" />
                 </button>
               </div>

@@ -37,17 +37,17 @@ const getRelativeDateString = (offsetDays: number) => {
 };
 
 const DEFAULT_PROFILE: UserProfile = {
-  name: 'Rohit Kumar',
-  email: 'rohit@medorax.ai',
-  avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&h=256&q=80',
-  bloodType: 'O-Positive',
-  height: '178 cm',
-  weight: '72 kg',
-  allergies: ['Penicillin', 'Peanuts'],
+  name: '',
+  email: '',
+  avatarUrl: '',
+  bloodType: '',
+  height: '',
+  weight: '',
+  allergies: [],
   emergencyContact: {
-    name: 'Aisha Kumar',
-    relationship: 'Spouse',
-    phone: '+91 98765 43210',
+    name: '',
+    relationship: '',
+    phone: '',
   },
   theme: 'dark',
   reminderPreferences: {
@@ -60,237 +60,12 @@ const DEFAULT_PROFILE: UserProfile = {
     shareData: true,
     biometricLock: false,
   },
-  connectedDevices: ['Apple Watch Series 9', 'Withings Smart Scale'],
+  connectedDevices: [],
 };
 
-const INITIAL_MEDICINES: Medicine[] = [
-  {
-    id: 'med-1',
-    name: 'Lipitor (Atorvastatin)',
-    dosage: '10mg',
-    frequency: 'daily',
-    times: ['08:00'],
-    foodTiming: 'after',
-    duration: 'continuous',
-    startDate: getRelativeDateString(-30),
-    status: 'active',
-    category: 'tablet',
-    notes: 'For cholesterol management. Take before bedtime or in morning.',
-    imageUrl: 'tablet',
-  },
-  {
-    id: 'med-2',
-    name: 'Metformin',
-    dosage: '500mg',
-    frequency: 'daily',
-    times: ['14:00', '20:00'],
-    foodTiming: 'with',
-    duration: 'continuous',
-    startDate: getRelativeDateString(-15),
-    status: 'active',
-    category: 'capsule',
-    notes: 'Blood sugar regulation. Always take with meals.',
-    imageUrl: 'capsule',
-  },
-  {
-    id: 'med-3',
-    name: 'Vitamin D3 (Cholecalciferol)',
-    dosage: '2000 IU',
-    frequency: 'weekly',
-    frequencyDays: [0], // Sundays
-    times: ['10:00'],
-    foodTiming: 'with',
-    duration: 'fixed',
-    durationDays: 90,
-    startDate: getRelativeDateString(-28),
-    endDate: getRelativeDateString(62),
-    status: 'active',
-    category: 'tablet',
-    notes: 'Bone strength support.',
-    imageUrl: 'tablet',
-  },
-  {
-    id: 'med-4',
-    name: 'Albuterol (ProAir HFA)',
-    dosage: '2 puffs',
-    frequency: 'as_needed',
-    times: ['12:00'],
-    foodTiming: 'none',
-    duration: 'continuous',
-    startDate: getRelativeDateString(-45),
-    status: 'active',
-    category: 'inhaler',
-    notes: 'Use in case of shortness of breath or asthma symptoms.',
-    imageUrl: 'inhaler',
-  },
-  {
-    id: 'med-5',
-    name: 'Amoxicillin Trihydrate',
-    dosage: '500mg',
-    frequency: 'daily',
-    times: ['08:00', '16:00', '22:00'],
-    foodTiming: 'before',
-    duration: 'fixed',
-    durationDays: 7,
-    startDate: getRelativeDateString(-14),
-    endDate: getRelativeDateString(-7),
-    status: 'completed',
-    category: 'capsule',
-    notes: 'Antibiotic for sinus infection. Make sure to complete the entire course.',
-    imageUrl: 'capsule',
-  },
-];
-
-// Helper to seed reminder logs for the last 7 days + today
-const seedReminderLogs = (medicines: Medicine[]): ReminderLog[] => {
-  const logs: ReminderLog[] = [];
-  const statusPool: ('completed' | 'missed')[] = ['completed', 'completed', 'completed', 'completed', 'missed', 'completed']; // ~83% completion rate
-
-  // Let's seed logs for past 7 days (day -7 to -1)
-  for (let i = -7; i < 0; i++) {
-    const dateStr = getRelativeDateString(i);
-    const dayOfWeek = new Date(dateStr).getDay();
-
-    medicines.forEach((med) => {
-      // Completed medicines aren't scheduled if date is outside range
-      if (med.status === 'completed' && med.endDate && dateStr > med.endDate) return;
-      if (med.status === 'completed' && dateStr < med.startDate) return;
-
-      // Handle weekly
-      if (med.frequency === 'weekly' && med.frequencyDays && !med.frequencyDays.includes(dayOfWeek)) {
-        return;
-      }
-      
-      // As needed drugs are rarely logged automatically
-      if (med.frequency === 'as_needed') {
-        if (Math.random() > 0.7) {
-          logs.push({
-            id: `log-${med.id}-${dateStr}-as-needed`,
-            medicineId: med.id,
-            medicineName: med.name,
-            dosage: med.dosage,
-            category: med.category,
-            date: dateStr,
-            time: '13:00',
-            foodTiming: med.foodTiming,
-            status: 'completed',
-            actionedAt: `${dateStr}T13:05:00Z`,
-          });
-        }
-        return;
-      }
-
-      // Daily schedule logs
-      med.times.forEach((time, index) => {
-        const randStatus = statusPool[Math.floor(Math.random() * statusPool.length)];
-        logs.push({
-          id: `log-${med.id}-${dateStr}-${time.replace(':', '')}`,
-          medicineId: med.id,
-          medicineName: med.name,
-          dosage: med.dosage,
-          category: med.category,
-          date: dateStr,
-          time,
-          foodTiming: med.foodTiming,
-          status: randStatus,
-          actionedAt: randStatus === 'completed' ? `${dateStr}T${time}:12Z` : undefined,
-        });
-      });
-    });
-  }
-
-  // Today's logs (some completed, some upcoming/pending)
-  const todayStr = getRelativeDateString(0);
-  const todayDayOfWeek = new Date().getDay();
-
-  medicines.forEach((med) => {
-    if (med.status !== 'active') return;
-    if (med.frequency === 'weekly' && med.frequencyDays && !med.frequencyDays.includes(todayDayOfWeek)) return;
-    if (med.frequency === 'as_needed') return;
-
-    med.times.forEach((time) => {
-      const [hour] = time.split(':').map(Number);
-      const currentHour = new Date().getHours();
-      let status: 'completed' | 'missed' | 'upcoming' = 'upcoming';
-      let actionedAt: string | undefined;
-
-      if (hour < currentHour - 1) {
-        // Dose was in past. Most likely completed or missed.
-        status = Math.random() > 0.15 ? 'completed' : 'missed';
-        if (status === 'completed') {
-          actionedAt = `${todayStr}T${time}:04Z`;
-        }
-      } else if (hour <= currentHour + 1) {
-        // Active window - pending
-        status = 'upcoming';
-      } else {
-        // Far future
-        status = 'upcoming';
-      }
-
-      logs.push({
-        id: `log-${med.id}-${todayStr}-${time.replace(':', '')}`,
-        medicineId: med.id,
-        medicineName: med.name,
-        dosage: med.dosage,
-        category: med.category,
-        date: todayStr,
-        time,
-        foodTiming: med.foodTiming,
-        status,
-        actionedAt,
-      });
-    });
-  });
-
-  return logs;
-};
-
-const INITIAL_NOTIFICATIONS: AppNotification[] = [
-  {
-    id: 'notif-1',
-    title: 'Morning Dose Missed',
-    message: 'You forgot to take Metformin 500mg at 08:00 AM today.',
-    timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-    isRead: false,
-    type: 'warning',
-    priority: 'high',
-    medicineId: 'med-2',
-  },
-  {
-    id: 'notif-2',
-    title: 'Adherence Goal Unlocked! 🌟',
-    message: 'Great job! You maintained 100% adherence over the past 4 days.',
-    timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-    isRead: false,
-    type: 'system',
-    priority: 'medium',
-  },
-  {
-    id: 'notif-3',
-    title: 'Refill Warning',
-    message: 'Lipitor (Atorvastatin) is running low. Only 5 tablets left.',
-    timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    isRead: true,
-    type: 'alert',
-    priority: 'high',
-    medicineId: 'med-1',
-  },
-];
-
-const INITIAL_CHAT_HISTORY: ChatMessage[] = [
-  {
-    id: 'chat-1',
-    text: 'Hello Rohit! I am your MedoraX AI Assistant. I can help analyze your prescriptions for conflicts, explain dosage timings, or answer questions about side effects. How can I assist you today?',
-    sender: 'assistant',
-    timestamp: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
-    suggestedPrompts: [
-      'Explain Lipitor side effects',
-      'Can I take Metformin with coffee?',
-      'Check conflicts in my prescription',
-    ],
-  },
-];
+const INITIAL_MEDICINES: Medicine[] = [];
+const INITIAL_NOTIFICATIONS: AppNotification[] = [];
+const INITIAL_CHAT_HISTORY: ChatMessage[] = [];
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
