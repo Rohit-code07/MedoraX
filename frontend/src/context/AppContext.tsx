@@ -69,32 +69,21 @@ const INITIAL_CHAT_HISTORY: ChatMessage[] = [];
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    return localStorage.getItem('medorax_auth') === 'true';
+    return localStorage.getItem('medorax_auth') === 'true' && Boolean(localStorage.getItem('token'));
   });
 
-  const [profile, setProfile] = useState<UserProfile>(() => {
-    const saved = localStorage.getItem('medorax_profile');
-    return saved ? JSON.parse(saved) : DEFAULT_PROFILE;
-  });
-
-  const [medicines, setMedicines] = useState<Medicine[]>(() => {
-    const saved = localStorage.getItem('medorax_medicines');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const [reminderLogs, setReminderLogs] = useState<ReminderLog[]>(() => {
-    const saved = localStorage.getItem('medorax_logs');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
+  const [medicines, setMedicines] = useState<Medicine[]>([]);
+  const [reminderLogs, setReminderLogs] = useState<ReminderLog[]>([]);
 
   const [notifications, setNotifications] = useState<AppNotification[]>(() => {
     const saved = localStorage.getItem('medorax_notifications');
-    return saved ? JSON.parse(saved) : INITIAL_NOTIFICATIONS;
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>(() => {
     const saved = localStorage.getItem('medorax_chat');
-    return saved ? JSON.parse(saved) : INITIAL_CHAT_HISTORY;
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [scans, setScans] = useState<PrescriptionScan[]>(() => {
@@ -102,24 +91,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return saved ? JSON.parse(saved) : [];
   });
 
-  // Sync state to localStorage
+  // Sync state to DOM dark mode theme
   useEffect(() => {
-    localStorage.setItem('medorax_profile', JSON.stringify(profile));
-    // Apply dark class to html document element for Tailwind dark mode
     if (profile.theme === 'dark') {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
     }
-  }, [profile]);
-
-  useEffect(() => {
-    localStorage.setItem('medorax_medicines', JSON.stringify(medicines));
-  }, [medicines]);
-
-  useEffect(() => {
-    localStorage.setItem('medorax_logs', JSON.stringify(reminderLogs));
-  }, [reminderLogs]);
+  }, [profile.theme]);
 
   useEffect(() => {
     localStorage.setItem('medorax_notifications', JSON.stringify(notifications));

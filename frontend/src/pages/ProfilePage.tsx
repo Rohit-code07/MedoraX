@@ -51,7 +51,13 @@ export const ProfilePage: React.FC = () => {
     const userId = localStorage.getItem('userId');
     if (userId) {
       try {
-        await apiUpdateProfile(userId, profileData);
+        await apiUpdateProfile(userId, {
+          name,
+          email: profile.email,
+          bloodGroup: bloodType,
+          emergencyContactName: emergencyName,
+          emergencyContactPhone: emergencyPhone,
+        });
       } catch (err) {
         console.warn('Backend profile update failed:', err);
       }
