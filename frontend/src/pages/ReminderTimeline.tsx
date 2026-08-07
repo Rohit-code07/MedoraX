@@ -18,8 +18,10 @@ import { Progress } from '../components/ui/Progress';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 
+import { ReminderLog } from '../types';
+
 export const ReminderTimeline: React.FC = () => {
-  const { reminderLogs, logReminder } = useApp();
+  const { reminderLogs, medicines, logReminder } = useApp();
 
   const [selectedDate, setSelectedDate] = useState<string>(() => {
     return new Date().toISOString().split('T')[0];
@@ -50,12 +52,42 @@ export const ReminderTimeline: React.FC = () => {
     setSelectedDate(d.toISOString().split('T')[0]);
   };
 
-  // Filter logs for the selected date
+  // Filter logs for the selected date, dynamically including active medicine schedules
   const selectedDateLogs = useMemo(() => {
-    return reminderLogs
-      .filter((log) => log.date === selectedDate)
-      .sort((a, b) => a.time.localeCompare(b.time));
-  }, [reminderLogs, selectedDate]);
+    const logsMap = new Map<string, ReminderLog>();
+    
+    // Existing database logs for selectedDate
+    reminderLogs.forEach(l => {
+      if (l.date === selectedDate) {
+        logsMap.set(`${l.medicineId || l.medicineName}-${l.time}`, l);
+      }
+    });
+
+    const result: ReminderLog[] = [...reminderLogs.filter(l => l.date === selectedDate)];
+
+    // Inject schedule slots for active medicines if not logged yet for selectedDate
+    medicines.forEach((med) => {
+      if (med.status !== 'active') return;
+      med.times.forEach((time) => {
+        const key = `${med.id}-${time}`;
+        if (!logsMap.has(key) && !result.some(l => (l.medicineId === med.id || l.medicineName === med.name) && l.time === time)) {
+          result.push({
+            id: `sch-${med.id}-${selectedDate}-${time.replace(':', '')}`,
+            medicineId: med.id,
+            medicineName: med.name,
+            dosage: med.dosage,
+            category: med.category,
+            date: selectedDate,
+            time: time,
+            foodTiming: med.foodTiming,
+            status: 'upcoming',
+          });
+        }
+      });
+    });
+
+    return result.sort((a, b) => a.time.localeCompare(b.time));
+  }, [reminderLogs, medicines, selectedDate]);
 
   // Derived stats for the selected date
   const stats = useMemo(() => {

@@ -46,12 +46,15 @@ export const Analytics: React.FC = () => {
     }).catch(err => console.warn('Backend analytics fetch error:', err));
   }, []);
 
-  // Adherence compliance calculated overall
+  // Adherence compliance calculated overall from backend / logs
   const overallAdherence = useMemo(() => {
+    if (backendAnalytics && backendAnalytics.weeklyRate !== undefined) {
+      return Math.round(backendAnalytics.weeklyRate);
+    }
     const nonUpcoming = reminderLogs.filter((l) => l.status !== 'upcoming');
     const completed = nonUpcoming.filter((l) => l.status === 'completed').length;
-    return nonUpcoming.length > 0 ? Math.round((completed / nonUpcoming.length) * 100) : 88;
-  }, [reminderLogs]);
+    return nonUpcoming.length > 0 ? Math.round((completed / nonUpcoming.length) * 100) : 0;
+  }, [reminderLogs, backendAnalytics]);
 
   // GitHub contribution-style Heatmap grid data (last 16 weeks)
   const heatmapData = useMemo(() => {
@@ -87,36 +90,40 @@ export const Analytics: React.FC = () => {
     return grid;
   }, [reminderLogs]);
 
-  // Recharts Chart: Compliance by medication name
+  // Recharts Chart: Compliance by medication name from backend perMedicineRate or medicines
   const medicationComplianceData = useMemo(() => {
-    const medsMap: { [key: string]: { completed: number; total: number } } = {};
-    
-    reminderLogs.forEach((log) => {
-      if (log.status === 'upcoming') return;
-      if (!medsMap[log.medicineName]) {
-        medsMap[log.medicineName] = { completed: 0, total: 0 };
-      }
-      medsMap[log.medicineName].total++;
-      if (log.status === 'completed') {
-        medsMap[log.medicineName].completed++;
-      }
-    });
+    if (backendAnalytics && Array.isArray(backendAnalytics.perMedicineRate) && backendAnalytics.perMedicineRate.length > 0) {
+      return backendAnalytics.perMedicineRate.map((item: any) => ({
+        name: (item.medicineName || 'Medication').split(' ')[0],
+        Rate: Math.round(item.adherencePercent || 0),
+      }));
+    }
 
-    return Object.keys(medsMap).map((key) => {
-      const rate = Math.round((medsMap[key].completed / medsMap[key].total) * 100);
-      return { name: key.split(' ')[0], Rate: rate };
-    });
-  }, [reminderLogs]);
+    if (medicines.length > 0) {
+      return medicines.map((m) => {
+        const logsForMed = reminderLogs.filter(l => l.medicineId === m.id || l.medicineName === m.name);
+        const done = logsForMed.filter(l => l.status === 'completed').length;
+        const rate = logsForMed.length > 0 ? Math.round((done / logsForMed.length) * 100) : (m.takenToday ? 100 : 0);
+        return { name: m.name.split(' ')[0], Rate: rate };
+      });
+    }
 
-  // Recharts Chart: Trend line over past 6 months
-  const monthlyTrendsData = [
-    { name: 'Mar', Adherence: 78 },
-    { name: 'Apr', Adherence: 82 },
-    { name: 'May', Adherence: 85 },
-    { name: 'Jun', Adherence: 89 },
-    { name: 'Jul', Adherence: 91 },
-    { name: 'Aug', Adherence: overallAdherence },
-  ];
+    return [];
+  }, [backendAnalytics, medicines, reminderLogs]);
+
+  // Recharts Chart: Trend line from backend weeklyChart or current adherence
+  const monthlyTrendsData = useMemo(() => {
+    if (backendAnalytics && Array.isArray(backendAnalytics.weeklyChart) && backendAnalytics.weeklyChart.length > 0) {
+      return backendAnalytics.weeklyChart.map((entry: any) => {
+        const total = (entry.taken || 0) + (entry.missed || 0);
+        const rate = total > 0 ? Math.round((entry.taken / total) * 100) : 0;
+        return { name: entry.day || entry.date, Adherence: rate };
+      });
+    }
+    return [
+      { name: 'Current', Adherence: overallAdherence }
+    ];
+  }, [backendAnalytics, overallAdherence]);
 
   return (
     <div className="flex flex-col gap-6 text-left">

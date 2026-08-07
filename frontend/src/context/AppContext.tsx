@@ -139,9 +139,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const fetchBackendData = async () => {
       try {
         const userId = localStorage.getItem('userId');
-        const [medRes, profRes] = await Promise.allSettled([
+        const [medRes, profRes, remRes] = await Promise.allSettled([
           medicineApi.getMedicines(),
           userId ? profileApi.getProfile(userId) : Promise.reject('No userId'),
+          reminderApi.getReminders(),
         ]);
 
         if (medRes.status === 'fulfilled' && Array.isArray(medRes.value.data)) {
@@ -177,6 +178,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               phone: profRes.value.data.emergencyContactPhone || prev.emergencyContact.phone,
             }
           }));
+        }
+
+        if (remRes.status === 'fulfilled' && Array.isArray(remRes.value.data)) {
+          const apiLogs: ReminderLog[] = remRes.value.data.map((r: any) => ({
+            id: String(r.id),
+            medicineId: r.medicine ? String(r.medicine.id) : '',
+            medicineName: r.medicine ? r.medicine.name : 'Medication',
+            dosage: r.medicine ? r.medicine.dosage : '',
+            category: r.medicine ? (r.medicine.category || 'tablet').toLowerCase() : 'tablet',
+            date: r.date || new Date().toISOString().split('T')[0],
+            time: r.time ? String(r.time).substring(0, 5) : '08:00',
+            foodTiming: r.medicine ? r.medicine.foodTiming || 'with' : 'with',
+            status: r.Remainderstatus === 'TAKEN' ? 'completed' : r.Remainderstatus === 'MISSED' ? 'missed' : 'upcoming',
+          }));
+          setReminderLogs(apiLogs);
         }
       } catch (err) {
         console.warn('Backend sync warning:', err);
