@@ -23,37 +23,37 @@ MedoraX follows a decoupled, microservices-ready Client-Server architecture with
 
 ```mermaid
 graph TD
-    subgraph Client Layer (React 18 + Vite SPA)
-        UI[User Interface & Dashboard]
-        AuthModule[Auth & OAuth2 Handler]
-        Store[AppContext & Local State]
-        Axios[Axios API Interceptor]
+    subgraph ClientLayer ["Client Layer (React 18 + Vite SPA)"]
+        UI["User Interface & Dashboard"]
+        AuthModule["Auth & OAuth2 Handler"]
+        Store["AppContext & Local State"]
+        Axios["Axios API Interceptor"]
     end
 
-    subgraph API Gateway & Security Layer (Spring Boot 3)
-        CORS[CORS Preflight & Origin Filter]
-        JWTFilter[JWT Authentication Filter]
-        OAuth2Handler[OAuth2 Success/Failure Handler]
-        Security[Spring Security Filter Chain]
+    subgraph SecurityLayer ["API Gateway & Security Layer (Spring Boot 3)"]
+        CORS["CORS Preflight & Origin Filter"]
+        JWTFilter["JWT Authentication Filter"]
+        OAuth2Handler["OAuth2 Success/Failure Handler"]
+        Security["Spring Security Filter Chain"]
     end
 
-    subgraph Business Logic & Controllers
-        AuthCtrl[Auth Controller]
-        MedCtrl[Medicine Controller]
-        ProfileCtrl[Profile Controller]
-        LogCtrl[Analytics & Log Controller]
-        RemCtrl[Reminder Controller]
-        MismatchCtrl[Mismatch & OCR Controller]
+    subgraph BusinessLayer ["Business Logic & Controllers"]
+        AuthCtrl["Auth Controller"]
+        MedCtrl["Medicine Controller"]
+        ProfileCtrl["Profile Controller"]
+        LogCtrl["Analytics & Log Controller"]
+        RemCtrl["Reminder Controller"]
+        MismatchCtrl["Mismatch & OCR Controller"]
     end
 
-    subgraph External AI Services & Data Engine
-        Gemini[Google Gemini AI API]
-        OCR[Tesseract OCR Engine]
+    subgraph ExternalServices ["External AI Services & Data Engine"]
+        Gemini["Google Gemini AI API"]
+        OCR["Tesseract OCR Engine"]
     end
 
-    subgraph Persistence Layer
-        JPA[Spring Data JPA / Hibernate]
-        DB[(MySQL Database)]
+    subgraph PersistenceLayer ["Persistence Layer"]
+        JPA["Spring Data JPA / Hibernate"]
+        DB[("MySQL Database")]
     end
 
     UI --> Store
