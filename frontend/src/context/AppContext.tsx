@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Medicine, ReminderLog, AppNotification, ChatMessage, PrescriptionScan, UserProfile } from '../types';
 import * as medicineApi from '../api/medicine.api';
 import * as profileApi from '../api/profile.api';
@@ -406,18 +406,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     fetchBackendData();
   }, [isAuthenticated]);
 
-  const login = (email: string, name?: string) => {
+  const login = useCallback((email: string, name?: string) => {
     setIsAuthenticated(true);
     localStorage.setItem('medorax_auth', 'true');
     setProfile(prev => ({ ...prev, email, ...(name ? { name } : {}) }));
-  };
+  }, []);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     setIsAuthenticated(false);
     localStorage.removeItem('medorax_auth');
     localStorage.removeItem('token');
     localStorage.removeItem('userId');
-  };
+  }, []);
 
   const addMedicine = (medData: Omit<Medicine, 'id' | 'status'>) => {
     const tempId = `med-${Date.now()}`;

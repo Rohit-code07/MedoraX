@@ -66,10 +66,15 @@ public class profileServices {
         // ─── Get ─────────────────────────────────────
 
         public profileDto getProfile(Long userId) {
-
-            profile p = profileRepository.findByUserId(userId)
-                    .orElseThrow(() -> new RuntimeException("Profile nahi mili: " + userId));
-
+            profile p = profileRepository.findByUserId(userId).orElse(null);
+            if (p == null) {
+                profileDto dto = new profileDto();
+                userRepository.findById(userId).ifPresent(u -> {
+                    dto.setName(u.getName());
+                    dto.setEmail(u.getEmail());
+                });
+                return dto;
+            }
             return mapToDto(p);
         }
 

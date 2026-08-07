@@ -41,7 +41,8 @@ export const Auth: React.FC = () => {
       toast.success('Successfully logged in with Google!');
       navigate('/dashboard', { replace: true });
     }
-  }, [searchParams, login, navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const { register, handleSubmit, formState: { errors }, reset } = useForm({
     defaultValues: {
