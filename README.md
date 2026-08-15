@@ -6,20 +6,23 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.x-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![Java](https://img.shields.io/badge/Java-21-ED8B00?logo=openjdk&logoColor=white)](https://www.oracle.com/java/)
 [![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.x-6DB33F?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
+[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![LangChain](https://img.shields.io/badge/LangChain-Enabled-1C3C3C?logo=chainlink&logoColor=white)](https://www.langchain.com/)
 [![MySQL](https://img.shields.io/badge/MySQL-8.x-4479A1?logo=mysql&logoColor=white)](https://www.mysql.com/)
-[![Google Gemini](https://img.shields.io/badge/Google_Gemini-AI_Engine-4285F4?logo=google&logoColor=white)](https://ai.google.dev/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-**MedoraX** is a HIPAA-compliant, enterprise-grade medication management and clinical decision-support ecosystem. Built with a high-performance **React + Vite** frontend and a robust **Spring Boot 3 REST API**, MedoraX incorporates **Google Gemini Multimodal AI** and **OCR Scanner Engines** to eliminate prescription mismatch risks, calculate patient adherence metrics, and deliver automated medication reminders.
+**MedoraX** is a HIPAA-compliant, enterprise-grade medication management and clinical decision-support ecosystem. Built with a high-performance **React + Vite** frontend, a robust **Spring Boot 3 REST API**, and a dedicated **Python FastAPI AI Service** (powered by **LangChain + Mistral AI** and **Google Gemini Vision AI**), MedoraX eliminates prescription mismatch risks, calculates patient adherence metrics, and delivers automated medication reminders.
 
 🌐 **Live Application**: [https://medora-x-five.vercel.app](https://medora-x-five.vercel.app)  
-⚙️ **Backend Production Service**: `https://medorax-0.onrender.com`
+⚙️ **Backend Service**: `http://localhost:8080` / `https://medorax-0.onrender.com`  
+🤖 **AI Service (FastAPI)**: `http://localhost:8000`
 
 ---
 
 ## 🏗️ System Architecture
 
-MedoraX follows a decoupled, microservices-ready Client-Server architecture with decoupled presentation, application logic, and persistence layers.
+MedoraX follows a multi-tier microservices architecture combining standard RESTful APIs with decoupled AI inference services.
 
 ```mermaid
 graph TD
@@ -30,24 +33,29 @@ graph TD
         Axios["Axios API Interceptor"]
     end
 
-    subgraph SecurityLayer ["API Gateway & Security Layer (Spring Boot 3)"]
+    subgraph BackendLayer ["Backend API & Gateway (Spring Boot 3)"]
         CORS["CORS Preflight & Origin Filter"]
         JWTFilter["JWT Authentication Filter"]
-        OAuth2Handler["OAuth2 Success/Failure Handler"]
-        Security["Spring Security Filter Chain"]
-    end
-
-    subgraph BusinessLayer ["Business Logic & Controllers"]
+        Security["Spring Security Chain"]
         AuthCtrl["Auth Controller"]
         MedCtrl["Medicine Controller"]
         ProfileCtrl["Profile Controller"]
         LogCtrl["Analytics & Log Controller"]
         RemCtrl["Reminder Controller"]
         MismatchCtrl["Mismatch & OCR Controller"]
+        AiCtrl["AI Integration Controller"]
+        FastAiService["FastAiService RestTemplate Proxy"]
     end
 
-    subgraph ExternalServices ["External AI Services & Data Engine"]
-        Gemini["Google Gemini AI API"]
+    subgraph AiMicroservice ["AI Service Microservice (Python FastAPI)"]
+        FastAPIApp["FastAPI Engine"]
+        ExplanationChain["LangChain Medicine Explanation Chain"]
+        PrescriptionChain["LangChain Prescription Analysis Chain"]
+        MistralLLM["Mistral AI LLM (mistral-small-latest)"]
+    end
+
+    subgraph ExternalServices ["External Vision & Data Engines"]
+        Gemini["Google Gemini Vision API"]
         OCR["Tesseract OCR Engine"]
     end
 
@@ -59,7 +67,7 @@ graph TD
     UI --> Store
     Store --> Axios
     Axios --> CORS
-    AuthModule --> OAuth2Handler
+    AuthModule --> Security
     CORS --> JWTFilter
     JWTFilter --> Security
     Security --> AuthCtrl
@@ -68,6 +76,15 @@ graph TD
     Security --> LogCtrl
     Security --> RemCtrl
     Security --> MismatchCtrl
+    Security --> AiCtrl
+
+    AiCtrl --> FastAiService
+    FastAiService -->|HTTP POST| FastAPIApp
+
+    FastAPIApp --> ExplanationChain
+    FastAPIApp --> PrescriptionChain
+    ExplanationChain --> MistralLLM
+    PrescriptionChain --> MistralLLM
 
     MedCtrl --> Gemini
     MismatchCtrl --> OCR
@@ -82,10 +99,11 @@ graph TD
 ```
 
 ### Data Flow & Request Lifecycle
-1. **Authentication Flow**: Users log in via JWT credentials (`/auth/login`) or Google OAuth2 (`/oauth2/authorization/google`). On OAuth success, the server redirects back to the SPA frontend with signed tokens.
+1. **Authentication**: Users log in via JWT credentials (`/auth/login`) or Google OAuth2 (`/oauth2/authorization/google`). On OAuth success, the server redirects back to the SPA with signed tokens.
 2. **API Interception**: All protected frontend requests attach `Authorization: Bearer <token>` headers via Axios interceptors.
-3. **Stateless Processing**: Spring Security verifies JWT claims, populating `SecurityContextHolder` with `userId` for thread-safe access.
-4. **AI & Vision Pipeline**: Optical Character Recognition extracts raw text from uploaded physical prescription images. Google Gemini AI compares the extracted text against active database records to detect dosage conflicts and drug-drug interactions.
+3. **AI Pipeline**:
+   - **FastAPI Microservice** (`/api/ai/*`): Handles natural language medicine queries, prescription breakdowns, and AI assistant chats using LangChain chains with Mistral AI.
+   - **Multimodal Vision** (`/api/mismatch/check`): OCR extracts text from prescription images, while Gemini AI cross-references physical pill images against user medication profiles.
 
 ---
 
@@ -100,25 +118,25 @@ graph TD
 ### 2. 📸 AI Prescription Mismatch & OCR Vision Scanner
 - **Multimodal AI Analysis**: Scans uploaded physical prescription documents alongside pill packaging.
 - **Conflict Identification**: Automatically flags drug mismatches, improper dosage frequencies, and dangerous drug-drug interactions using Google Gemini 1.5 Flash.
-- **Automated Structuring**: Converts unstructured medical handwriting and printed text into structured data.
+- **Automated Fallbacks**: Analyzes raw OCR text if medicine packaging images are omitted.
 
-### 3. 🗓️ Intelligent Reminder Timeline & Schedule Engine
+### 3. 🤖 MedoraX AI Health Assistant (FastAPI + LangChain)
+- **Clinical Copilot Assistant**: Interactive AI assistant for answering medical queries, explaining side effects, and verifying food/beverage interactions.
+- **Structured Markdown Rendering**: Renders clinical headers, warning callout cards (`⚠️`), and bulleted recommendations cleanly in the UI.
+- **FastAPI Proxy**: Spring Boot proxies request payloads seamlessly to the Python FastAPI microservice.
+
+### 4. 🗓️ Intelligent Reminder Timeline & Schedule Engine
 - **Horizontal Date Navigator**: 7-day calendar strip allowing historical review and future intake planning.
 - **Hourly Medication Timeline**: Chronological event sequence showing exact dosage times, food constraints (*Before Meals, With Food, After Meals*), and administration notes.
 - **Compliance Toggles**: One-click action buttons to mark doses as **Taken**, **Missed**, or **Reset**.
 
-### 4. 📈 Analytics & Heatmap Visualization
+### 5. 📈 Analytics & Heatmap Visualization
 - **GitHub-Style Compliance Heatmap**: 6-month density matrix visualizing long-term intake consistency.
 - **Per-Medication Adherence Rates**: Individual breakdown of compliance percentages across every active treatment.
-- **Most Consistent & Needs Attention Highlights**: Identifies top-performing medications and items requiring supervisory intervention.
 
-### 5. 🤖 MedoraX AI Health Assistant
-- **Clinical Knowledge Engine**: Interactive AI copilot for answering medical questions, explaining side effects, and verifying food/beverage interactions.
-- **Predefined Clinical Prompts**: Quick-access prompt chips for rapid guidance on common pharmaceutical questions.
-
-### 6. 👤 Patient Profile & Emergency Contact Escalation
+### 6. 👤 Patient Profile & Emergency Escalation
 - **Demographic Vitals**: Blood group, height, weight, and allergy records.
-- **Emergency Guardian Contact**: Stores emergency contact details for automated alert escalation if high-priority doses are missed.
+- **Emergency Guardian Contact**: Stores emergency contact details for automated alert escalation.
 
 ---
 
@@ -131,11 +149,12 @@ graph TD
 | **Animations & UI Components** | Framer Motion, Lucide Icons, React Hot Toast |
 | **Data Visualization** | Recharts (Area, Bar, & Line Charts) |
 | **HTTP & State Management** | Axios, React Context API, React Hook Form |
-| **Backend Framework** | Java 21, Spring Boot 3.x, Spring MVC |
+| **Backend Framework** | Java 21, Spring Boot 3.x, Spring MVC, RestTemplate |
 | **Security & Auth** | Spring Security 6, JWT (io.jsonwebtoken), Google OAuth2 |
-| **Database & ORM** | MySQL 8.0 / PostgreSQL, Spring Data JPA, Hibernate |
-| **AI Services & OCR** | Google Gemini AI API (Gemini 1.5 Flash / Vision), Tesseract OCR |
-| **Build & Deployment** | Maven (Backend), Vite (Frontend), Vercel (SPA Hosting), Render (Backend API) |
+| **AI Microservice** | Python 3.11+, FastAPI, Uvicorn, LangChain, Pydantic |
+| **AI Models & LLMs** | Mistral AI (`mistral-small-latest`), Google Gemini 1.5 Flash |
+| **Database & ORM** | MySQL 8.0, Spring Data JPA, Hibernate |
+| **Build Tools** | Maven (Spring Boot), UV / Pip (Python), Vite (React) |
 
 ---
 
@@ -143,81 +162,60 @@ graph TD
 
 ```bash
 MedoraX/
-├── vercel.json                           # Root Vercel SPA routing rules
-├── README.md                             # Architecture & Documentation
+├── README.md                             # Project Overview & Architecture Guide
+├── Ai Service/                           # Python FastAPI AI Microservice
+├── app/
+│   ├── chains/                           # LangChain chains (explanation & prescription)
+│   ├── models/                           # Pydantic Request/Response models
+│   ├── prompts/                          # Clinical system prompt templates
+│   ├── routes/                           # FastAPI APIRouter endpoints
+│   ├── services/                         # LLM invocation services
+│   └── main.py                           # FastAPI application entrypoint
+├── main.py                               # Root FastAPI runner
+├── requirements.txt                      # Python dependencies
+├── pyproject.toml / uv.lock              # UV package management
+│
 ├── frontend/                             # React + Vite Frontend Application
-│   ├── public/                           # Static assets, vercel.json, _redirects
 │   ├── src/
 │   │   ├── api/                          # Axios API clients
+│   │   │   ├── ai.api.ts                 # FastAPI AI integration client
 │   │   │   ├── analytics.api.ts          # Analytics & Heatmap endpoints
 │   │   │   ├── auth.api.ts               # Login, Signup, OAuth endpoints
-│   │   │   ├── axios.ts                  # Interceptor & dynamic baseURL setup
 │   │   │   ├── medicine.api.ts           # Medicine CRUD & AI endpoints
-│   │   │   ├── mismatch.api.ts           # OCR & Prescription Scanner endpoints
-│   │   │   ├── profile.api.ts            # Patient profile API
-│   │   │   └── reminder.api.ts           # Scheduled reminder API
-│   │   ├── components/                   # Reusable UI Components
-│   │   │   ├── ui/                       # Button, Card, Input, Select, Badge, Tabs
-│   │   │   └── Header.tsx / Sidebar.tsx  # Layout Header and Navigation Sidebar
-│   │   ├── context/
-│   │   │   └── AppContext.tsx            # Global application state & API synchronization
-│   │   ├── layouts/
-│   │   │   └── DashboardLayout.tsx       # Protected layout container
-│   │   ├── pages/                        # View Pages
-│   │   │   ├── AIAssistant.tsx           # AI Copilot Assistant page
-│   │   │   ├── AddMedicine.tsx           # Multi-step medication setup wizard
-│   │   │   ├── Analytics.tsx             # Adherence Heatmap & Analytics page
-│   │   │   ├── Auth.tsx                  # Login / Signup & OAuth callback page
-│   │   │   ├── Dashboard.tsx             # Core Patient Dashboard
-│   │   │   ├── LandingPage.tsx           # Public Hero & Features page
-│   │   │   ├── MedicineManagement.tsx    # Shelf catalog & active management
-│   │   │   ├── PrescriptionMismatch.tsx  # AI OCR & Vision Scanner page
-│   │   │   ├── ProfilePage.tsx           # Patient Vitals & Emergency Contacts page
-│   │   │   ├── ReminderTimeline.tsx      # Daily Calendar Schedule Timeline
-│   │   │   └── SettingsPage.tsx          # App Preferences & Notification page
-│   │   ├── types/                        # TypeScript Interfaces & Models
-│   │   ├── App.tsx                       # React Router configuration
-│   │   └── main.tsx                      # Vite entry point
-│   ├── package.json
-│   ├── tsconfig.json
-│   ├── vite.config.ts
-│   └── vercel.json
+│   │   │   └── mismatch.api.ts           # OCR & Prescription Scanner endpoints
+│   │   ├── components/                   # UI components (Header, Sidebar, Cards, Badges)
+│   │   ├── context/                      # AppContext global state
+│   │   ├── pages/                        # AIAssistant, Dashboard, PrescriptionMismatch, etc.
+│   │   └── App.tsx / main.tsx
+│   ├── .env                              # VITE_API_BASE_URL config
+│   └── package.json
 │
 └── backend/                              # Spring Boot Java Backend Service
     └── medicineRemainder/
         └── medicineRemainder/
             ├── src/main/java/com/project/medicineRemainder/
-            │   ├── Security/             # JWT Filter, Util, & OAuth2 Success Handler
-            │   │   ├── SecurityConfig.java
-            │   │   ├── OAuth2AuthenticationSuccessHandler.java
-            │   │   ├── jwt.java
-            │   │   └── jwtUtil.java
-            │   ├── config/               # Web & CORS Configurations
-            │   ├── controller/           # REST API Controllers
-            │   │   ├── Authcontroller.java
-            │   │   ├── ReminderController.java
-            │   │   ├── medicineController.java
-            │   │   ├── medicineLogController.java
-            │   │   ├── profileController.java
-            │   │   └── userController.java
-            │   ├── dto/                  # Data Transfer Objects
-            │   ├── Entity/               # JPA Entities (User, Medicine, profile, Remainder, medicineLog)
-            │   ├── repository/           # Spring Data JPA Repositories
-            │   └── service/              # Business Logic Services
-            │       ├── GeminiServices.java
-            │       ├── OCRservices.java
-            │       ├── medicineLogServices.java
-            │       ├── medicineServices.java
-            │       ├── profileServices.java
-            │       └── remainderServices.java
+            │   ├── Security/             # SecurityConfig, JWT Filter, OAuth2 Handler
+            │   ├── controller/           # REST API Controllers (AiIntegrationController, etc.)
+            │   ├── dto/                  # AiMedicineRequest, AiChatRequest, etc.
+            │   ├── Entity/               # JPA Entities (User, Medicine, Reminder, Log)
+            │   └── service/              # FastAiService, GeminiServices, OCRservices, etc.
             ├── src/main/resources/
-            │   └── application.properties# Spring Configuration & Database Credentials
+            │   └── application.properties# Environment configurations & database settings
+            ├── run-backend.ps1           # Helper script for running Spring Boot with env vars
             └── pom.xml
 ```
 
 ---
 
 ## 📡 REST API Reference
+
+### 🤖 AI Service Integration (`/api/ai`)
+| Method | Endpoint | Description | Proxied To |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/ai/chat` | AI Health Assistant chat | FastAPI `POST /chat` |
+| `POST` | `/api/ai/explain` | Explain medicine details & side effects | FastAPI `POST /api/medicine/explain` |
+| `POST` | `/api/ai/prescription` | Analyze unstructured prescription text | FastAPI `POST /api/prescription/analyze` |
+| `GET` | `/api/ai/health` | FastAPI service health check | FastAPI `GET /health` |
 
 ### 🔐 Authentication (`/auth`, `/api/auth`)
 | Method | Endpoint | Description | Auth Required |
@@ -226,53 +224,24 @@ MedoraX/
 | `POST` | `/auth/login` | Log in and receive JWT token | ❌ |
 | `GET` | `/oauth2/authorization/google` | Trigger Google OAuth2 Sign-In | ❌ |
 | `GET` | `/api/auth/me` | Fetch authenticated user details | ✅ |
-| `POST` | `/api/auth/logout` | Revoke session and log out | ✅ |
 
 ### 💊 Medicines (`/api/medicines`)
 | Method | Endpoint | Description | Auth Required |
 | :--- | :--- | :--- | :---: |
 | `GET` | `/api/medicines` | Get all active medicines for authenticated user | ✅ |
 | `POST` | `/api/medicines` | Add a new medicine item | ✅ |
-| `GET` | `/api/medicines/{id}` | Get medicine details by ID | ✅ |
-| `PUT` | `/api/medicines/{id}` | Update medicine properties | ✅ |
-| `DELETE` | `/api/medicines/{id}` | Delete a medicine item | ✅ |
 | `PUT` | `/api/medicines/{id}/taken` | Mark dose as taken today | ✅ |
 | `PUT` | `/api/medicines/{id}/missed` | Mark dose as missed today | ✅ |
-| `POST` | `/api/medicines/explain` | Explain medicine details via Gemini AI | ✅ |
-| `POST` | `/api/medicines/process-prescription` | Process prescription image via OCR + Gemini | ✅ |
 
-### 🗓️ Reminders (`/remainder`)
+### 📸 Prescription Scan & Mismatch (`/api/mismatch`)
 | Method | Endpoint | Description | Auth Required |
 | :--- | :--- | :--- | :---: |
-| `GET` | `/remainder/all` | Fetch scheduled reminders | ✅ |
-| `POST` | `/remainder/create` | Create a scheduled reminder | ✅ |
-| `PUT` | `/remainder/update-status/{id}?st=TAKEN` | Update reminder status (`TAKEN`, `MISSED`, `PENDING`) | ✅ |
-
-### 📊 Analytics & Heatmap (`/api/analytics`)
-| Method | Endpoint | Description | Auth Required |
-| :--- | :--- | :--- | :---: |
-| `GET` | `/api/analytics/{userId}` | Get full user analytics breakdown | ✅ |
-| `GET` | `/api/analytics/{userId}/streak` | Fetch day streak count | ✅ |
-| `GET` | `/api/analytics/{userId}/weekly-rate` | Fetch weekly compliance rate (%) | ✅ |
-| `GET` | `/api/analytics/heatmap` | Fetch 6-month compliance heatmap data | ✅ |
-
-### 👤 Profile (`/api/profile`)
-| Method | Endpoint | Description | Auth Required |
-| :--- | :--- | :--- | :---: |
-| `GET` | `/api/profile?userId={id}` | Get patient medical profile | ✅ |
-| `POST` | `/api/profile?userId={id}` | Create patient profile | ✅ |
-| `PUT` | `/api/profile?userId={id}` | Update patient profile vitals & contacts | ✅ |
+| `POST` | `/api/mismatch/check` | Analyze prescription image against medicine image or name | ❌ |
+| `POST` | `/api/mismatch/ocr-only` | Extract raw text via Tesseract OCR | ❌ |
 
 ---
 
-## ⚡ Local Setup & Installation
-
-### Prerequisites
-- **Node.js**: v18.x or higher
-- **npm**: v9.x or higher
-- **Java JDK**: 21
-- **Maven**: 3.8+
-- **MySQL**: 8.0+
+## ⚡ Local Setup & Execution Guide
 
 ### 1. Clone the Repository
 ```bash
@@ -280,80 +249,44 @@ git clone https://github.com/Rohit-code07/MedoraX.git
 cd MedoraX
 ```
 
-### 2. Configure Backend Service
-Navigate to the Spring Boot project directory:
-```bash
-cd backend/medicineRemainder/medicineRemainder
+### 2. Start Python FastAPI AI Service
+```powershell
+cd "Ai Service"
+
+# Option A: Using UV (Recommended)
+uv run uvicorn app.main:app --port 8000 --reload
+
+# Option B: Using Pip & Virtual Environment
+python -m venv .venv
+.\.venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn app.main:app --port 8000 --reload
 ```
-
-Configure `src/main/resources/application.properties` (or export environment variables):
-```properties
-# Server
-server.port=8080
-
-# Database
-spring.datasource.url=jdbc:mysql://localhost:3306/medorax_db?createDatabaseIfNotExist=true&useSSL=false
-spring.datasource.username=root
-spring.datasource.password=your_mysql_password
-spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
-
-# JPA Hibernate
-spring.jpa.hibernate.ddl-auto=update
-spring.jpa.show-sql=true
-
-# Frontend Origin URL
-app.frontend.url=http://localhost:5173
-
-# Gemini AI API Key
-gemini.api.key=YOUR_GEMINI_API_KEY
-
-# Google OAuth2 Credentials
-spring.security.oauth2.client.registration.google.client-id=YOUR_GOOGLE_CLIENT_ID
-spring.security.oauth2.client.registration.google.client-secret=YOUR_GOOGLE_CLIENT_SECRET
-spring.security.oauth2.client.registration.google.scope=email,profile
-spring.security.oauth2.client.registration.google.redirect-uri=http://localhost:8080/login/oauth2/code/google
-```
-
-Compile and run the Spring Boot server:
-```bash
-./mvnw spring-boot:run
-```
-The backend server will start on `http://localhost:8080`.
-
-### 3. Configure Frontend Client
-In a new terminal window, navigate to the `frontend` folder:
-```bash
-cd frontend
-npm install
-```
-
-Start the Vite development server:
-```bash
-npm run dev
-```
-Open `http://localhost:5173` in your browser.
+*AI Service will run on `http://localhost:8000`*.
 
 ---
 
-## 🌐 Production Deployment
-
-### Frontend Deployment (Vercel)
-The project includes a root `vercel.json` and `frontend/public/vercel.json` configuring Single Page Application rewrites so all route requests (`/auth`, `/dashboard`, `/analytics`, `/timeline`) route back to `index.html`:
-```json
-{
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
-  ]
-}
+### 3. Start Spring Boot Backend
+Navigate to the Spring Boot directory:
+```powershell
+cd "backend/medicineRemainder/medicineRemainder"
 ```
+Edit credentials in `run-backend.ps1` or export environment variables, then execute:
+```powershell
+.\run-backend.ps1
+```
+*Backend API will run on `http://localhost:8080`*.
 
-### Backend Deployment (Render / Docker)
-The Spring Boot backend can be deployed using the provided `Dockerfile` or Maven build pack on Render:
-- **Build Command**: `./mvnw clean package -DskipTests`
-- **Start Command**: `java -jar target/medicineRemainder-0.0.1-SNAPSHOT.jar`
+---
+
+### 4. Start React Frontend Client
+Navigate to the `frontend` folder:
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+*Frontend app will run on `http://localhost:5173`*.
 
 ---
 
