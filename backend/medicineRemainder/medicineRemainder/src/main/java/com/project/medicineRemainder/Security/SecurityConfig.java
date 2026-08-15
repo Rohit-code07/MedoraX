@@ -46,7 +46,8 @@ public class SecurityConfig {
                         // FIX 1: Permit favicon and /error so they don't return 401
                         .requestMatchers("/favicon.ico", "/error").permitAll()
                         .requestMatchers("/api/mismatch/**").permitAll()
-                       .requestMatchers("/api/user/fcm-token").permitAll()
+                        .requestMatchers("/api/ai/**").permitAll()
+                        .requestMatchers("/api/user/fcm-token").permitAll()
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2 -> oauth2

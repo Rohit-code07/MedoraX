@@ -63,6 +63,7 @@ export const PrescriptionMismatch: React.FC = () => {
 
     const formData = new FormData();
     formData.append("prescription", file);
+    formData.append("medicineName", file.name.replace(/\.[^/.]+$/, ""));
 
     const progressInterval = setInterval(() => {
       setScanProgress((prev) => (prev >= 90 ? 90 : prev + 10));

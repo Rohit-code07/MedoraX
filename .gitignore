@@ -1,2 +1,30 @@
-.idea/ 
+# Environment / Secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Java
+target/
+
+# Node
+node_modules/
+dist/
+
+# IDE
 .idea/
+.vscode/
+
+# Secrets / credentials
+*.pem
+*.key
+firebase-service-account*.json
+service-account*.json
+
+# Local backend startup script
+backend/medicineRemainder/medicineRemainder/run-backend.ps1

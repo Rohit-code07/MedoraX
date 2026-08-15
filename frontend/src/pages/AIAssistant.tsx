@@ -18,6 +18,7 @@ import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { motion } from 'framer-motion';
 import { explainMedicine } from '../api/medicine.api';
+import { chatAi, explainMedicineAi } from '../api/ai.api';
 
 export const AIAssistant: React.FC = () => {
   const location = useLocation();
@@ -51,6 +52,87 @@ export const AIAssistant: React.FC = () => {
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatHistory, isTyping]);
+
+  // Helper for inline bold (**text**) & formatting
+  const parseInlineStyles = (text: string) => {
+    const parts = text.split(/(\*\*.*?\*\*)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return (
+          <strong key={i} className="font-bold text-slate-900 dark:text-zinc-100">
+            {part.slice(2, -2)}
+          </strong>
+        );
+      }
+      return part;
+    });
+  };
+
+  // Rich markdown parser for headers, bullet points, warning alerts, and lists
+  const renderFormattedText = (rawText: string) => {
+    const lines = rawText.split('\n');
+    const elements: React.ReactNode[] = [];
+
+    lines.forEach((line, idx) => {
+      const trimmed = line.trim();
+      if (!trimmed) return;
+
+      // Header (#, ##, ###) or bold headers like # **What is Paracetamol?**
+      if (trimmed.startsWith('#')) {
+        const cleanHeader = trimmed.replace(/^#+\s*/, '').replace(/\*\*/g, '').trim();
+        elements.push(
+          <h3 key={idx} className="font-bold text-xs uppercase tracking-wider text-brand-primary dark:text-brand-secondary mt-3 mb-1 border-b border-slate-150 dark:border-zinc-800/80 pb-1 flex items-center gap-1.5">
+            {cleanHeader}
+          </h3>
+        );
+        return;
+      }
+
+      // Warning alerts (⚠️)
+      if (trimmed.includes('⚠️')) {
+        elements.push(
+          <div key={idx} className="p-2.5 my-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 text-amber-900 dark:text-amber-300 font-medium text-[11px] leading-relaxed">
+            {parseInlineStyles(trimmed)}
+          </div>
+        );
+        return;
+      }
+
+      // Standalone bold titles (e.g. **Common Uses of Paracetamol**)
+      if (trimmed.startsWith('**') && trimmed.endsWith('**') && trimmed.length < 80) {
+        const cleanTitle = trimmed.slice(2, -2).trim();
+        elements.push(
+          <h4 key={idx} className="font-bold text-xs text-slate-800 dark:text-zinc-200 mt-2 mb-0.5">
+            {cleanTitle}
+          </h4>
+        );
+        return;
+      }
+
+      // Bullet points (- or * or numbered 1.)
+      if (trimmed.startsWith('-') || trimmed.startsWith('*') || /^\d+\./.test(trimmed)) {
+        const bulletText = trimmed.replace(/^[-*\d.]+\s*/, '');
+        elements.push(
+          <div key={idx} className="flex items-start gap-2 pl-2 my-0.5 text-xs text-slate-700 dark:text-zinc-300">
+            <span className="text-brand-primary dark:text-brand-secondary font-extrabold select-none">•</span>
+            <span className="flex-1 leading-relaxed">
+              {parseInlineStyles(bulletText)}
+            </span>
+          </div>
+        );
+        return;
+      }
+
+      // Normal paragraph text
+      elements.push(
+        <p key={idx} className="my-0.5 leading-relaxed text-xs text-slate-700 dark:text-zinc-300">
+          {parseInlineStyles(trimmed)}
+        </p>
+      );
+    });
+
+    return <div className="flex flex-col gap-1 text-left">{elements}</div>;
+  };
 
   // Fallback clinical reply generator
   const getAIResponse = (text: string): string => {
@@ -103,25 +185,41 @@ To help coordinate your treatment schedules safely, please keep in mind:
     setIsTyping(true);
 
     try {
-      const response = await explainMedicine({
-        medicineName: textToSend,
-        dosage: 'standard',
-        userAge: 30,
-        symptoms: '',
-        medicalHistory: '',
-        specificQuestion: textToSend,
-      });
+      let aiReply = '';
+      
+      // 1. Try FastAPI AI Chat endpoint via Spring Boot (/api/ai/chat)
+      try {
+        const chatRes = await chatAi({ message: textToSend });
+        if (chatRes.data && chatRes.data.response) {
+          aiReply = chatRes.data.response;
+        }
+      } catch (chatErr) {
+        // 2. Try FastAPI Explain endpoint (/api/ai/explain)
+        try {
+          const explainRes = await explainMedicineAi({ medicine_name: textToSend, question: textToSend });
+          if (explainRes.data && explainRes.data.answer) {
+            aiReply = explainRes.data.answer;
+          }
+        } catch (explainErr) {
+          // 3. Try legacy Gemini endpoint (/api/medicines/explain)
+          const legacyRes = await explainMedicine({
+            medicineName: textToSend,
+            dosage: 'standard',
+            userAge: 30,
+            symptoms: '',
+            medicalHistory: '',
+            specificQuestion: textToSend,
+          });
+          const data = legacyRes.data;
+          if (data && (data.summary || data.timingGuidance || data.use || data.answer)) {
+            aiReply = data.answer || data.summary || data.use || data.timingGuidance;
+          }
+        }
+      }
 
       setIsTyping(false);
-      const data = response.data;
-      if (data && (data.summary || data.timingGuidance)) {
-        let reply = `### ${textToSend}\n\n`;
-        if (data.summary) reply += `**Summary:** ${data.summary}\n\n`;
-        if (data.timingGuidance) reply += `**Timing Guidance:** ${data.timingGuidance}\n\n`;
-        if (data.foodRecommendation) reply += `**Food Recommendation:** ${data.foodRecommendation}\n\n`;
-        if (data.commonSideEffects) reply += `**Common Side Effects:** ${data.commonSideEffects}\n\n`;
-        if (data.warningFlags) reply += `**Warnings:** ${data.warningFlags}\n\n`;
-        addChatMessage(reply, 'assistant');
+      if (aiReply) {
+        addChatMessage(aiReply, 'assistant');
       } else {
         addChatMessage(getAIResponse(textToSend), 'assistant');
       }
@@ -183,37 +281,7 @@ To help coordinate your treatment schedules safely, please keep in mind:
                   `}
                 >
                   {isAI ? (
-                    // Simple custom renderer to parse markdown formatting like headers, bullet lists, bold text
-                    <div className="flex flex-col gap-2.5">
-                      {msg.text.split('\n').map((line, idx) => {
-                        if (line.startsWith('###')) {
-                          return (
-                            <h4 key={idx} className="font-extrabold text-sm text-slate-900 dark:text-white mt-1 border-b border-slate-50 dark:border-zinc-800/50 pb-1.5">
-                              {line.replace('###', '').trim()}
-                            </h4>
-                          );
-                        }
-                        if (line.startsWith('**') && line.endsWith('**')) {
-                          return (
-                            <span key={idx} className="font-bold text-slate-800 dark:text-zinc-200 mt-1 block">
-                              {line.replace(/\*\*/g, '').trim()}
-                            </span>
-                          );
-                        }
-                        if (line.startsWith('-') || line.match(/^\d+\./)) {
-                          return (
-                            <p key={idx} className="pl-4 relative before:content-['•'] before:absolute before:left-1 before:text-brand-primary">
-                              {line.replace(/^[-\d\.]+\s*/, '').replace(/\*\*/g, '')}
-                            </p>
-                          );
-                        }
-                        return (
-                          <p key={idx} className="leading-normal">
-                            {line.split('**').map((part, i) => i % 2 === 1 ? <strong key={i} className="font-bold text-slate-800 dark:text-zinc-100">{part}</strong> : part)}
-                          </p>
-                        );
-                      })}
-                    </div>
+                    renderFormattedText(msg.text)
                   ) : (
                     <p className="font-medium text-slate-50 leading-normal">{msg.text}</p>
                   )}

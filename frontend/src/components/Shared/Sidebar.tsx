@@ -128,7 +128,7 @@ export const Sidebar: React.FC = () => {
         {/* Profile Card */}
         <div className="flex items-center gap-3 p-2 rounded-xl border border-transparent hover:border-slate-100 dark:hover:border-zinc-800 hover:bg-slate-50/50 dark:hover:bg-zinc-900/30 transition-all duration-200 cursor-pointer mt-1" onClick={() => navigate('/profile')}>
           <img
-            src={profile.avatarUrl}
+            src={profile.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=256"}
             alt={profile.name}
             className="w-9 h-9 rounded-lg object-cover ring-2 ring-slate-100 dark:ring-zinc-800"
           />

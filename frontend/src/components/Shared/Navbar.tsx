@@ -183,7 +183,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onMobileMenuToggle }) => {
           className="flex items-center gap-2.5 p-1 rounded-xl hover:bg-slate-50 dark:hover:bg-zinc-900/50 transition-all border border-transparent hover:border-slate-100 dark:hover:border-zinc-800 cursor-pointer"
         >
           <img
-            src={profile.avatarUrl}
+            src={profile.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=256"}
             alt={profile.name}
             className="w-8 h-8 rounded-lg object-cover ring-2 ring-slate-50 dark:ring-zinc-900"
           />

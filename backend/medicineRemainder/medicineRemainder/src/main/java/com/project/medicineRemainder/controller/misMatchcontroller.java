@@ -17,7 +17,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/mismatch")
-@CrossOrigin(origins = "*")
+@CrossOrigin(originPatterns = "*")
 public class misMatchcontroller {
 
     @Autowired
@@ -82,8 +82,10 @@ public class misMatchcontroller {
                 response.put("medicineIdentifiedFrom", "text");
 
             } else {
-                response.put("error", "Provide medicine image or name.");
-                return ResponseEntity.badRequest().body(response);
+                // ── PRESCRIPTION OCR ONLY MODE ─────────────────────────
+                fullResult = geminiServices.analyzeAll(ocrText, null);
+                response.put("identifiedMedicine", "Prescription Scan");
+                response.put("medicineIdentifiedFrom", "ocr");
             }
 
             System.out.println("=== OCR TEXT === " + ocrText);

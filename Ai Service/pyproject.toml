@@ -1,0 +1,15 @@
+[project]
+name = "ai-service"
+version = "0.1.0"
+description = "MedoraX AI Service"
+readme = "README.md"
+requires-python = ">=3.14"
+
+dependencies = [
+    "fastapi",
+    "langchain-mistralai>=1.1.6",
+    "uvicorn[standard]",
+]
+
+[tool.uv]
+package = false
