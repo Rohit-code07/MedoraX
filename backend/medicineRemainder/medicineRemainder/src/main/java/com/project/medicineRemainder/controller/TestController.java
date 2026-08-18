@@ -26,5 +26,9 @@ public class TestController {
 
             return "Sent";
         }
+         @GetMapping("/health")
+    public ResponseEntity<String> health() {
+        return ResponseEntity.ok("OK");
+    }
     }
 
