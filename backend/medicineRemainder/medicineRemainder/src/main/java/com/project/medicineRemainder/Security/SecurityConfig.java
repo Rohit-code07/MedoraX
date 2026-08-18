@@ -36,9 +36,9 @@ public class SecurityConfig {
         http
                 .cors(Customizer.withDefaults())
                 .csrf(csrf -> csrf.disable())
-                .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                )
+               .sessionManagement(session ->
+        session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(org.springframework.web.cors.CorsUtils::isPreFlightRequest).permitAll()
                         .requestMatchers("/auth/login", "/auth/register", "/auth/signup").permitAll()
