@@ -56,11 +56,13 @@ public class SecurityConfig {
                         // FIX 2: Custom failure handler — returns JSON instead of
                         // redirecting to /login?error (which caused the 401)
                         .failureHandler((request, response, exception) -> {
+                            System.err.println("[OAuth2 Failure] Reason: " + exception.getMessage());
+                            exception.printStackTrace();
                             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                             response.setContentType("application/json");
+                            String errMsg = exception.getMessage() != null ? exception.getMessage().replace("\"", "'") : "Unknown error";
                             response.getWriter().write(
-                                    "{\"error\": \"OAuth2 authentication failed\", \"message\": \""
-                                            + exception.getMessage() + "\"}"
+                                    "{\"error\": \"OAuth2 authentication failed\", \"message\": \"" + errMsg + "\"}"
                             );
                         })
                 )
