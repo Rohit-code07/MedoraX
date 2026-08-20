@@ -26,5 +26,4 @@ public class User {
     private List<Medicine> medicines;
     @OneToMany(cascade = CascadeType.ALL,mappedBy = "user")
     private List<medicineLog> medicineLogs;
-
 }
