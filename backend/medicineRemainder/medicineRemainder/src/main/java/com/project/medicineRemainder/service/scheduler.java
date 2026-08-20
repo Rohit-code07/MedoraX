@@ -26,16 +26,21 @@ public class scheduler {
 
         for (Medicine m : medicines) {
 
-            String token = m.getUser().getFCMtoken();
-
-            // ✅ Ye check add karo
-            if (token == null || token.isEmpty()) {
-                System.err.println("❌ No FCM token for user: " + m.getUser().getId());
+            if (m.getTime() == null || m.getUser() == null) {
                 continue;
             }
 
+            // 1. Pehle check karo ki abhi medicine lene ka time hai ya nahi
             if ((m.getTime().getHour() == now.getHour()) &&
                     (m.getTime().getMinute() == now.getMinute())) {
+
+                String token = m.getUser().getFCMtoken();
+
+                // 2. Sirf tab check karo & log karo jab notification actually bejni ho
+                if (token == null || token.isEmpty()) {
+                    System.err.println("❌ No FCM token for user: " + m.getUser().getId() + " (Medicine: " + m.getName() + ")");
+                    continue;
+                }
 
                 System.out.println("🔔 Sending notification for medicine: " + m.getName());
                 notificationService.sendNotification(

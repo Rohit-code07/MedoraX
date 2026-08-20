@@ -5,6 +5,7 @@ import com.project.medicineRemainder.dto.userDto;
 import com.project.medicineRemainder.dto.userloginDto;
 import com.project.medicineRemainder.repository.userrepo;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -15,11 +16,14 @@ public class userServices {
     @Autowired
     private userrepo user1;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     public User signup(userDto dto) {
         User user = new User();
         user.setName(dto.getName());
         user.setEmail(dto.getEmail());
-        user.setPassword(dto.getPassword());
+        user.setPassword(passwordEncoder.encode(dto.getPassword()));
         return user1.save(user);
     }
 
@@ -28,7 +32,10 @@ public class userServices {
                 .findByEmail(dto.getEmail())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        if (!user.getPassword().equals(dto.getPassword())) {
+        boolean passwordMatches = passwordEncoder.matches(dto.getPassword(), user.getPassword())
+                || dto.getPassword().equals(user.getPassword());
+
+        if (!passwordMatches) {
             throw new RuntimeException("Invalid password");
         }
 
