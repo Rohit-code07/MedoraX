@@ -22,6 +22,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     private jwtUtil jwtUtil;
 
     @Autowired
+    @org.springframework.context.annotation.Lazy
     private userServices userServices;
 
     @Value("${app.frontend.url}")
