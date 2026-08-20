@@ -48,6 +48,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/mismatch/**").permitAll()
                         .requestMatchers("/api/ai/**").permitAll()
                         .requestMatchers("/api/user/fcm-token").permitAll()
+                        .requestMatchers("/test/health").permitAll()
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2 -> oauth2
