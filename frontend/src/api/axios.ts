@@ -25,4 +25,19 @@ api.interceptors.request.use((config: any) => {
   return config;
 });
 
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("medorax_auth");
+      localStorage.removeItem("userId");
+      if (typeof window !== "undefined" && !window.location.pathname.startsWith("/auth")) {
+        window.location.href = "/auth";
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export default api;
