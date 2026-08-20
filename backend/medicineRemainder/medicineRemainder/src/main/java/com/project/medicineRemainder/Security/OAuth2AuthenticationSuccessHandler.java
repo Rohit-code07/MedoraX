@@ -29,30 +29,41 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
-                                        HttpServletResponse response,
-                                        Authentication authentication) throws IOException {
+                                         HttpServletResponse response,
+                                         Authentication authentication) throws IOException {
+        try {
+            OAuth2User oauthUser = (OAuth2User) authentication.getPrincipal();
 
-        OAuth2User oauthUser = (OAuth2User) authentication.getPrincipal();
+            String email = oauthUser.getAttribute("email");
+            String name  = oauthUser.getAttribute("name");
 
-        String email = oauthUser.getAttribute("email");
-        String name  = oauthUser.getAttribute("name");
-        if (name == null || name.isBlank()) {
-            name = email != null ? email.split("@")[0] : "User";
+            if (email == null || email.isBlank()) {
+                throw new IllegalArgumentException("Email not provided by Google OAuth");
+            }
+
+            if (name == null || name.isBlank()) {
+                name = email.split("@")[0];
+            }
+
+            User user = userServices.findOrCreateByEmail(email, name);
+
+            String token = jwtUtil.generateToken(user.getId(), user.getEmail());
+
+            String safeName = URLEncoder.encode(user.getName() != null ? user.getName() : "", StandardCharsets.UTF_8);
+            String safeEmail = URLEncoder.encode(user.getEmail() != null ? user.getEmail() : "", StandardCharsets.UTF_8);
+
+            String redirectUrl = frontendUrl + "/auth"
+                    + "?token=" + token
+                    + "&userId=" + user.getId()
+                    + "&name=" + safeName
+                    + "&email=" + safeEmail;
+
+            response.sendRedirect(redirectUrl);
+        } catch (Exception e) {
+            System.err.println("[OAuth2 SuccessHandler Error]: " + e.getMessage());
+            e.printStackTrace();
+            String errorMsg = URLEncoder.encode(e.getMessage() != null ? e.getMessage() : "OAuth authentication failed", StandardCharsets.UTF_8);
+            response.sendRedirect(frontendUrl + "/auth?error=" + errorMsg);
         }
-
-        User user = userServices.findOrCreateByEmail(email, name);
-
-        String token = jwtUtil.generateToken(user.getId(), user.getEmail());
-
-        String safeName = URLEncoder.encode(user.getName() != null ? user.getName() : "", StandardCharsets.UTF_8);
-        String safeEmail = URLEncoder.encode(user.getEmail() != null ? user.getEmail() : "", StandardCharsets.UTF_8);
-
-        String redirectUrl = frontendUrl + "/auth"
-                + "?token=" + token
-                + "&userId=" + user.getId()
-                + "&name=" + safeName
-                + "&email=" + safeEmail;
-
-        response.sendRedirect(redirectUrl);
     }
 }
