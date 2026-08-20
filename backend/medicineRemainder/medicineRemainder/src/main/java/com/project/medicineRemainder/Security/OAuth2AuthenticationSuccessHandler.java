@@ -36,16 +36,22 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
         String email = oauthUser.getAttribute("email");
         String name  = oauthUser.getAttribute("name");
+        if (name == null || name.isBlank()) {
+            name = email != null ? email.split("@")[0] : "User";
+        }
 
         User user = userServices.findOrCreateByEmail(email, name);
 
         String token = jwtUtil.generateToken(user.getId(), user.getEmail());
 
+        String safeName = URLEncoder.encode(user.getName() != null ? user.getName() : "", StandardCharsets.UTF_8);
+        String safeEmail = URLEncoder.encode(user.getEmail() != null ? user.getEmail() : "", StandardCharsets.UTF_8);
+
         String redirectUrl = frontendUrl + "/auth"
                 + "?token=" + token
                 + "&userId=" + user.getId()
-                + "&name=" + URLEncoder.encode(user.getName(), StandardCharsets.UTF_8)
-                + "&email=" + URLEncoder.encode(user.getEmail(), StandardCharsets.UTF_8);
+                + "&name=" + safeName
+                + "&email=" + safeEmail;
 
         response.sendRedirect(redirectUrl);
     }
