@@ -23,80 +23,8 @@
 ## 🏗️ System Architecture
 
 MedoraX follows a multi-tier microservices architecture combining standard RESTful APIs with decoupled AI inference services.
+<img width="1536" height="1024" alt="medorax flow chat" src="https://github.com/user-attachments/assets/bcee3371-9b17-4a1b-af07-402cb58cd234" />
 
-```mermaid
-graph TD
-    subgraph ClientLayer ["Client Layer (React 18 + Vite SPA)"]
-        UI["User Interface & Dashboard"]
-        AuthModule["Auth & OAuth2 Handler"]
-        Store["AppContext & Local State"]
-        Axios["Axios API Interceptor"]
-    end
-
-    subgraph BackendLayer ["Backend API & Gateway (Spring Boot 3)"]
-        CORS["CORS Preflight & Origin Filter"]
-        JWTFilter["JWT Authentication Filter"]
-        Security["Spring Security Chain"]
-        AuthCtrl["Auth Controller"]
-        MedCtrl["Medicine Controller"]
-        ProfileCtrl["Profile Controller"]
-        LogCtrl["Analytics & Log Controller"]
-        RemCtrl["Reminder Controller"]
-        MismatchCtrl["Mismatch & OCR Controller"]
-        AiCtrl["AI Integration Controller"]
-        FastAiService["FastAiService RestTemplate Proxy"]
-    end
-
-    subgraph AiMicroservice ["AI Service Microservice (Python FastAPI)"]
-        FastAPIApp["FastAPI Engine"]
-        ExplanationChain["LangChain Medicine Explanation Chain"]
-        PrescriptionChain["LangChain Prescription Analysis Chain"]
-        MistralLLM["Mistral AI LLM (mistral-small-latest)"]
-    end
-
-    subgraph ExternalServices ["External Vision & Data Engines"]
-        Gemini["Google Gemini Vision API"]
-        OCR["Tesseract OCR Engine"]
-    end
-
-    subgraph PersistenceLayer ["Persistence Layer"]
-        JPA["Spring Data JPA / Hibernate"]
-        DB[("MySQL Database")]
-    end
-
-    UI --> Store
-    Store --> Axios
-    Axios --> CORS
-    AuthModule --> Security
-    CORS --> JWTFilter
-    JWTFilter --> Security
-    Security --> AuthCtrl
-    Security --> MedCtrl
-    Security --> ProfileCtrl
-    Security --> LogCtrl
-    Security --> RemCtrl
-    Security --> MismatchCtrl
-    Security --> AiCtrl
-
-    AiCtrl --> FastAiService
-    FastAiService -->|HTTP POST| FastAPIApp
-
-    FastAPIApp --> ExplanationChain
-    FastAPIApp --> PrescriptionChain
-    ExplanationChain --> MistralLLM
-    PrescriptionChain --> MistralLLM
-
-    MedCtrl --> Gemini
-    MismatchCtrl --> OCR
-    MismatchCtrl --> Gemini
-
-    AuthCtrl --> JPA
-    MedCtrl --> JPA
-    ProfileCtrl --> JPA
-    LogCtrl --> JPA
-    RemCtrl --> JPA
-    JPA --> DB
-```
 
 ### Data Flow & Request Lifecycle
 1. **Authentication**: Users log in via JWT credentials (`/auth/login`) or Google OAuth2 (`/oauth2/authorization/google`). On OAuth success, the server redirects back to the SPA with signed tokens.
